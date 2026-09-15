@@ -1,0 +1,28 @@
+name: Check application and Linux Blender
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: npm run lint
+      - run: pip install -r backend/requirements.txt
+      - run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - run: docker build -t prihoda-studio:check .
+      - name: Test production login, protected files and real CPU rendering
+        run: docker run --rm -v "$PWD/scripts/smoke_container.py:/check.py:ro" prihoda-studio:check python /check.py

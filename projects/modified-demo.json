@@ -1,0 +1,36 @@
+{
+  "project_name": "Production Hall Demo",
+  "room": {
+    "type": "production_hall",
+    "length_m": 30.0,
+    "width_m": 15.0,
+    "height_m": 6.0
+  },
+  "air": {
+    "airflow_m3h": 7000.0,
+    "supply_temperature_c": 16.0,
+    "room_temperature_c": 22.0,
+    "static_pressure_pa": null,
+    "occupied_zone_velocity_ms": null
+  },
+  "ducts": {
+    "count": 3,
+    "shape": "circular",
+    "diameter_mm": 600.0,
+    "length_m": 22.0,
+    "installation_height_m": 5.5,
+    "spacing_m": 6.0,
+    "color": "#d71920"
+  },
+  "distribution": {
+    "type": "large_nozzles",
+    "direction": "angled_down",
+    "angle_deg": 35.0
+  },
+  "visualization": {
+    "airflow_mode": "animated",
+    "show_occupied_zone": true,
+    "show_dimensions": true,
+    "environment": "production_hall"
+  }
+}
