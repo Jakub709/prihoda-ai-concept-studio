@@ -115,12 +115,12 @@ class OpenAIProvider:
         start = time.monotonic()
         response = httpx.post('https://api.openai.com/v1/chat/completions', timeout=35, verify=tls_context(),
             headers={'Authorization': 'Bearer ' + setting('OPENAI_API_KEY')},
-            json={'model': setting('OPENAI_MODEL', 'gpt-4.1-mini'),
+            json={'model': setting('OPENAI_MODEL', 'gpt-5.6-terra'),
                 'messages': [{'role':'system','content':'You structure conceptual HVAC data. Never generate code. Only use explicitly requested values. Do not infer engineering calculations.'}, {'role':'user','content':instruction}],
                 'response_format': {'type':'json_schema','json_schema': {'name':'result','strict':True,'schema':schema}}})
         response.raise_for_status()
         payload = response.json()
-        self.receipt = {'provider':'openai', 'model':payload.get('model',setting('OPENAI_MODEL','gpt-4.1-mini')),
+        self.receipt = {'provider':'openai', 'model':payload.get('model',setting('OPENAI_MODEL','gpt-5.6-terra')),
                         'request_id':payload.get('id'), 'latency_ms':round((time.monotonic()-start)*1000),
                         'tokens':payload.get('usage',{}).get('total_tokens')}
         choice=payload['choices'][0]

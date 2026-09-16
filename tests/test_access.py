@@ -129,5 +129,20 @@ class AccessTests(unittest.TestCase):
         self.settings.clear()
         self.assertEqual(self.client.get('/api/health').json(), {'app':'prihoda-concept-studio','ok':True})
 
+    def test_setup_diagnostics_identify_invalid_field_without_exposing_values(self):
+        self.settings['STUDIO_ACCESS_CODE'] = 'short-secret'
+        response = self.client.get('/api/auth/session')
+        issues = response.json()['setup_issues']
+        self.assertEqual(len(issues), 1)
+        self.assertIn('STUDIO_ACCESS_CODE', issues[0])
+        self.assertNotIn('short-secret', response.text)
+        self.settings['STUDIO_ACCESS_CODE'] = CODE
+        self.settings['STUDIO_PUBLIC_ORIGIN'] = 'https://example.test/studio'
+        response = self.client.get('/api/auth/session')
+        self.assertIn('STUDIO_PUBLIC_ORIGIN', response.json()['setup_issues'][0])
+        self.assertNotIn(CODE, response.text)
+        self.settings['STUDIO_PUBLIC_ORIGIN'] = ORIGIN
+        self.assertEqual(self.client.get('/api/auth/session').json()['setup_issues'], [])
+
 if __name__ == '__main__':
     unittest.main()

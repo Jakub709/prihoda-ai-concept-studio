@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight, LoaderCircle, LockKeyhole, LogOut } from 'lucide
 import './landing.css'
 
 const Studio = lazy(() => import('./page'))
-type Session = { authenticated: boolean; configured: boolean; local: boolean }
+type Session = { authenticated: boolean; configured: boolean; local: boolean; setup_issues?: string[] }
 
 export default function StudioAccess() {
  const [session,setSession] = useState<Session|null>(null)
@@ -60,6 +60,7 @@ export default function StudioAccess() {
    {checking?<p role="status"><LoaderCircle className="spin" size={20}/> Ověřujeme přístup.</p>:<>
     <p>{session?.configured?'Zadejte přístupový kód, který jste dostali od správce. Vaše projekty na vás čekají uvnitř.':session?'Studio je určené pozvaným uživatelům. Přístup zatím není aktivovaný; podrobnosti vám poskytne správce.':'Pracovní studio není momentálně dostupné. Veřejnou ukázku si můžete dál prohlédnout na úvodní stránce.'}</p>
     {session?.configured?<form onSubmit={login}><label htmlFor="studio-code">Přístupový kód</label><input id="studio-code" name="password" type="password" autoComplete="current-password" value={code} onChange={e=>setCode(e.target.value)} required maxLength={256} aria-describedby={error?'access-error':undefined}/>{error&&<p className="access-error" id="access-error" role="alert">{error}</p>}<button className="landing-button" type="submit" disabled={busy||!code}>{busy?<LoaderCircle size={17} className="spin"/>:<LockKeyhole size={15}/>} {busy?'Přihlašuji…':'Vstoupit do studia'}<ArrowRight size={17}/></button></form>:<>{error&&<p className="access-error" role="alert">{error}</p>}<div className="access-actions"><button className="landing-button" onClick={()=>void check()}>Zkusit znovu<ArrowRight size={16}/></button><a className="landing-text-link" href="/#ukazka">Prohlédnout ukázku</a></div></>}
+    {!session?.configured&&session?.setup_issues?.map(issue=><p className="access-error" key={issue}>{issue}</p>)}
     <p className="access-notice">Nemáte přístup? Obraťte se na člověka, který vám studio představil.</p>
     <a className="landing-text-link" href="/"><ArrowLeft size={14}/>Zpět na úvodní stránku</a>
    </>}

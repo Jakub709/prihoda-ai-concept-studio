@@ -28,7 +28,7 @@ def configure(values):
 def public_settings():
     return {
         'openai_configured': bool(setting('OPENAI_API_KEY')),
-        'openai_model': setting('OPENAI_MODEL', 'gpt-4.1-mini'),
+        'openai_model': setting('OPENAI_MODEL', 'gpt-5.6-terra'),
         'supabase_configured': bool(setting('SUPABASE_URL') and (setting('SUPABASE_SECRET_KEY') or setting('SUPABASE_SERVICE_ROLE_KEY'))),
         'supabase_url': setting('SUPABASE_URL'),
     }

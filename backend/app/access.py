@@ -26,15 +26,25 @@ ATTEMPT_LOCK = Lock()
 def public_origin():
     return setting('STUDIO_PUBLIC_ORIGIN').strip().rstrip('/')
 
-def configured():
+def setup_issues():
+    # Return fixed instructions only: never echo configuration or secret values.
+    issues = []
+    if not 16 <= len(setting('STUDIO_ACCESS_CODE')) <= 256:
+        issues.append('V Railway nastavte STUDIO_ACCESS_CODE na vlastní heslo o 16 až 256 znacích a nasaďte změny.')
     try:
         origin = urlsplit(public_origin())
         origin.port
+        valid_origin = (origin.scheme == 'https' and bool(origin.hostname)
+                        and not origin.username and not origin.password
+                        and not origin.path and not origin.query and not origin.fragment)
     except ValueError:
-        return False
-    return (16 <= len(setting('STUDIO_ACCESS_CODE')) <= 256 and origin.scheme == 'https'
-            and bool(origin.hostname) and not origin.username and not origin.password
-            and not origin.path and not origin.query and not origin.fragment)
+        valid_origin = False
+    if not valid_origin:
+        issues.append('V Railway nastavte STUDIO_PUBLIC_ORIGIN na HTTPS adresu webu bez cesty /studio, bez uvozovek a bez formátování odkazu. Potom nasaďte změny.')
+    return issues
+
+def configured():
+    return not setup_issues()
 
 def is_loopback(value):
     try:
@@ -107,7 +117,8 @@ async def protect_studio(request: Request, call_next):
 @router.get('/session')
 def session(request: Request):
     return {'authenticated': authenticated(request), 'configured': bool(configured()),
-            'local': bool(local_development(request))}
+            'local': bool(local_development(request)),
+            'setup_issues': [] if local_development(request) else setup_issues()}
 
 class LoginInput(BaseModel):
     model_config = ConfigDict(extra='forbid')
