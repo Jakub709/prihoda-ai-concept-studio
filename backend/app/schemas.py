@@ -88,17 +88,28 @@ ALLOWED_PATHS = {
     f'{section}.{field}' for section, model in [('room', Room), ('air', Air),
     ('ducts', Ducts), ('distribution', Distribution), ('visualization', Visualization)]
     for field in model.model_fields
-}
+} | {'project_name'}
+
+def patch_response_schema():
+    schema = Patch.model_json_schema()
+    schema['$defs']['Change']['properties']['path']['enum'] = sorted(ALLOWED_PATHS)
+    return schema
 
 def apply_patch(project: Project, patch: Patch) -> Project:
     data = project.model_dump()
     seen = set()
     for change in patch.changes:
-        if change.path not in ALLOWED_PATHS or change.path in seen:
-            raise ValueError('The proposed change contains an unsupported or duplicate field.')
+        if change.path not in ALLOWED_PATHS:
+            raise ValueError('AI vrátila nepodporovaný parametr. Zkuste zadání zopakovat; původní projekt zůstává zachovaný.')
+        if change.path in seen:
+            raise ValueError('AI navrhla více změn stejného parametru. Zadejte pro každý parametr jednu výslednou hodnotu.')
         seen.add(change.path)
-        section, field = change.path.split('.')
-        if data[section][field] != change.old_value:
+        if change.path == 'project_name':
+            target, field = data, 'project_name'
+        else:
+            section, field = change.path.split('.')
+            target = data[section]
+        if target[field] != change.old_value:
             raise ValueError('The concept changed meanwhile. Please try the instruction again.')
-        data[section][field] = change.new_value
+        target[field] = change.new_value
     return Project.model_validate(data)

@@ -5,7 +5,7 @@ import unicodedata
 import time
 from typing import Protocol
 import httpx
-from .schemas import DEMO, Project, Patch, Change, apply_patch
+from .schemas import DEMO, Project, Patch, Change, apply_patch, ALLOWED_PATHS, patch_response_schema
 from .config import setting
 from .network import tls_context
 
@@ -100,7 +100,11 @@ class DemoProvider:
 class OpenAIProvider:
     """Optional provider. Outputs are validated data, never executable code."""
     def project_rules(self):
-        return ('Use section.field paths and values that satisfy this project schema: '
+        return ('Use only these exact patch paths: ' + json.dumps(sorted(ALLOWED_PATHS))
+                + '. Each path must occur at most once, with its final requested value. '
+                'project_name is a top-level path; all others use section.field. '
+                'Never patch original_request. Do not invent fields for unsupported scene details. '
+                'Values must satisfy this project schema: '
                 + json.dumps(Project.model_json_schema())
                 + '\nCopy old_value exactly from the provided project, preserving its JSON type. '
                 'Use numbers for numeric fields, booleans for switches, and the exact enum strings. '
@@ -131,16 +135,16 @@ class OpenAIProvider:
         return json.loads(choice['message']['content'])
 
     def modify_project(self, command, project):
-        patch = Patch.model_validate(self.ask(self.project_rules() + 'Return changes for this project. Project: ' + project.model_dump_json() + '\nInstruction: ' + command, Patch.model_json_schema()))
+        patch = Patch.model_validate(self.ask(self.project_rules() + 'Return changes for this project. Project: ' + project.model_dump_json() + '\nInstruction: ' + command, patch_response_schema()))
         apply_patch(project, patch)
         return patch
 
     def parse_customer_request(self, text):
         baseline = DEMO.model_copy(deep=True)
+        baseline.project_name = 'Customer concept'
         for key in type(baseline.air).model_fields: setattr(baseline.air, key, None)
-        patch = Patch.model_validate(self.ask(self.project_rules() + 'Extract only explicitly stated values as patches to this baseline: ' + baseline.model_dump_json() + '\nRequest: ' + text, Patch.model_json_schema()))
+        patch = Patch.model_validate(self.ask(self.project_rules() + 'Extract only explicitly stated values as patches to this baseline: ' + baseline.model_dump_json() + '\nRequest: ' + text, patch_response_schema()))
         project = apply_patch(baseline, patch)
-        project.project_name = 'Customer concept'
         extracted = [c.path for c in patch.changes]
         return {'project':project, 'extracted':extracted, 'unconfirmed':[f'{s}.{k}' for s in ['room','air','ducts','distribution'] for k in project.model_dump()[s] if f'{s}.{k}' not in extracted], 'provider':'openai', 'receipt':self.receipt}
 
